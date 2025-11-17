@@ -7,7 +7,7 @@ class SelectQuery implements Query {
   FromClause? _from;
   WhereClause? _where;
 
-  SelectQuery from(String tableName) {
+  SelectQuery(String tableName) {
     _from = FromClause(tableName);
     return this;
   }
@@ -34,19 +34,26 @@ class SelectQuery implements Query {
     return this;
   }
 
+  SelectQuery group(void Function(WhereClause) builder) {
+    _where ??= WhereClause();
+    _where!.startGroup();
+    builder(_where!);
+    _where!.endGroup();
+    return this;
+  }
+
   @override
   String build() {
     if (_from == null) {
       throw StateError('FROM clause must be specified');
     }
 
-    final parts = ['SELECT * ', _from!.build()];
+    final parts = ['SELECT *', _from!.build()];
     if (_where != null) {
-      parts.add(_where!.build());
+      parts.add(_where!.buildCondition());
     }
 
     parts.add(';');
-
-    return parts.join('');
+    return parts.join(' ');
   }
 }

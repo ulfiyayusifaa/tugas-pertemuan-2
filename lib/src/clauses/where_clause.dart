@@ -1,3 +1,5 @@
+// where_clause.dart
+
 import '../core/query.dart';
 import '../core/conditional.dart';
 import '../enums/sql_logical.dart';
@@ -6,18 +8,34 @@ import 'condition.dart';
 
 class WhereClause implements Query, Conditional {
   final List<String> _outerStack = [];
+  final List<String> _groupStack = [];
+  bool isGroup = false;
+
+  List<String> get _activeStack => isGroup ? _groupStack : _outerStack;
 
   void addCondition(String column, SqlOperator operator, dynamic value) {
     final condition = Condition(column, operator, value);
-    _outerStack.add(condition.build());
+    _activeStack.add(condition.build());
   }
 
   void or() {
-    _outerStack.add(SqlLogical.or.toString());
+    _activeStack.add(SqlLogical.or.toString());
   }
 
   void and() {
-    _outerStack.add(SqlLogical.and.toString());
+    _activeStack.add(SqlLogical.and.toString());
+  }
+
+  void startGroup() {
+    _outerStack.add('(');
+    isGroup = true;
+  }
+
+  void endGroup() {
+    isGroup = false;
+    _outerStack.add(_groupStack.join(' '));
+    _outerStack.add(')');
+    _groupStack.clear();
   }
 
   @override
@@ -30,5 +48,6 @@ class WhereClause implements Query, Conditional {
     if (_outerStack.isEmpty) {
       return '';
     }
-    return ' WHERE ${_outerStack.join(' ')}';
-  } }
+    return 'WHERE ${_outerStack.join(' ')}';
+  }
+}
